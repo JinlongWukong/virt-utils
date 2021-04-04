@@ -6,12 +6,12 @@
 # -u/--user-data option).
 
 usage () {
-	echo "usage: ${0##*/}: [--ssh-key <pubkey>] [--vendor-data <file>] [--user-data <file>] [--prefix <prefix>] [--size <size>] "
+	echo "usage: ${0##*/}: [--ssh-key <pubkey>] [--vendor-data <file>] [--user-data <file>] [--prefix <prefix>] [--number <number>] "
 }
 
 ARGS=$(getopt \
-	-o k:u:v:p:s: \
-	--long help,ssh-key:,user-data:,vendor-data:,prefix:,size: -n ${0##*/} \
+	-o k:u:v:p:n: \
+	--long help,ssh-key:,user-data:,vendor-data:,prefix:,number: -n ${0##*/} \
 	-- "$@")
 
 saveARGS="$@"
@@ -45,8 +45,8 @@ while :; do
 			prefix="$2"
 			shift 2
 			;;
-		-s|--size)
-			size="$2"
+		-n|--number)
+			number="$2"
 			shift 2
 			;;
 		--)	shift
@@ -67,14 +67,14 @@ if ! [ "$prefix" ]; then
 	exit 1
 fi
 
-# set default value of size is 1
-: ${size:=1}
+# set default value of number is 1
+: ${number:=1}
 
-# remove -p xxx -s xx  from args to give right args to create-config-drive.sh
-inARGS=$(echo "$saveARGS" | sed 's/-p [[:alnum:]]*//g;s/-s [[:digit:]]*//g')
+# remove -p xxx -n xx  from args to give right args to create-config-drive.sh
+inARGS=$(echo "$saveARGS" | sed 's/-p [[:alnum:]]*//g;s/-n [[:digit:]]*//g;s/--prefix [[:alnum:]]*//g;s/--number [[:digit:]]*//g;')
 
 # loop work
-for(( i=1;i<=$size;i++))
+for(( i=1;i<=$number;i++))
 do
   if [ -f "$prefix-$i.iso" ]; then
     echo -e "WARNING: $prefix-$i.iso already existed, skip"
