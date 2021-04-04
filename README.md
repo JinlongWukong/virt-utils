@@ -16,5 +16,6 @@ Things that are here:
   volume
 - create-config-drive -- create a cloud-init/openstack compatible
   config ISO image
+- create-config-drive-bulk.sh -- wrapper of create-config-drive, for multi
 - virt-boot -- wrapper for virt-install to create a snapshot,
   populate a cloud-init compatible config drive, and boot an instance.
