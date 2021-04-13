@@ -71,7 +71,7 @@ fi
 : ${number:=1}
 
 # remove -p xxx -n xx  from args to give right args to create-config-drive.sh
-inARGS=$(echo "$saveARGS" | sed 's/-p [[:alnum:]]*//g;s/-n [[:digit:]]*//g;s/--prefix [[:alnum:]]*//g;s/--number [[:digit:]]*//g;')
+inARGS=$(echo "$saveARGS" | sed 's/-p [[:graph:]]*//g;s/-n [[:digit:]]*//g;s/--prefix [[:graph:]]*//g;s/--number [[:digit:]]*//g;')
 
 # loop work
 for(( i=1;i<=$number;i++))
