@@ -1,0 +1,148 @@
+#!/bin/bash
+
+# This script is used for adjusting mem/cpu count
+set -e
+
+function highlight() {
+	COLOR='\033[01;33m' # bold yellow
+	RESET='\033[00;00m' # normal white
+	MESSAGE=${@:-"${RESET}Warning: No message passed"}
+	echo -e "${COLOR}${MESSAGE}${RESET}"
+}
+
+function ask_for_continue() {
+
+	while read -p "Do you want continue? yes or no: " yn; do
+		case $yn in
+			Y|y|Yes|yes) echo -e "\nScript continue ... \n"; break;;
+			N|n|No|no) exit 1;;
+			*) echo "Must answer y or n";;
+		esac
+	done
+
+}
+
+usage () {
+	echo "usage: ${0##*/}: [--cpu/-c <cpu number>] [--memory/-m <memory size, example 2G/2024M>] [--live/-l] domain_name"
+}
+
+ARGS=$(getopt -o c:m:l --long help,cpu:,memory:,live -n ${0##*/} -- "$@")
+
+if [ $? -ne 0 ]; then
+	usage >&2
+	exit 2
+fi
+
+eval set -- "$ARGS"
+
+while :; do
+	case "$1" in
+		--help)
+			usage
+			exit 0
+			;;
+		-c|--cpu)
+			cpu_number="$2"
+			shift 2
+			;;
+		-m|--memory)
+			memory_size="$2"
+			shift 2
+			;;
+		-l|--live)
+			LIVE_ONLY=true
+			shift 1
+			;;
+		--)	shift
+			break
+			;;
+	esac
+done
+
+# Positional paramer is domain name
+dom_name=$1
+: "${dom_name:?"args error, domain name not give"}"
+
+## Adjust memory size
+if [[ $memory_size ]]; then
+  # ep, if give 2048, then -> 2048M
+  [[ $memory_size =~ ^[0-9]+$ ]] && memory_size=$memory_size'M'
+  # memory size must be use unit M or G
+  ! [[ $memory_size =~ ^[0-9]+[M|G]$ ]] && echo "Memory size is wrong give" && exit 2
+
+  # fetch max memory
+  max_memory=$(virsh dominfo "$dom_name"  | awk  '/^Max memory/{print $3}')
+
+  # compare give memory size and max memory size, if give is bigger, need do adjust after vm shutdown
+  [[ $memory_size =~ ^[0-9]+M$ ]] && kilo_memory_size=$((${memory_size/M/}*1024))
+  [[ $memory_size =~ ^[0-9]+G$ ]] && kilo_memory_size=$((${memory_size/G/}*1024*1024))
+  if [ $kilo_memory_size -le "$max_memory" ]; then
+    virsh setmem "$dom_name" "$memory_size" --live
+    #The configuration change takes effect on the next reboot of the guest.
+    #Must edit the VM configuration to preserve the settings across the VM power OFF/ ON
+    if [[ ! $LIVE_ONLY ]]; then
+      virsh setmem "$dom_name" "$memory_size" --config
+    fi
+  else
+    highlight "$memory_size is over max memory size, need adjust max memory size, will reboot guest"
+    REBOOT=MEMORY
+  fi
+fi
+
+## Adjust cpu number
+if [[ $cpu_number ]]; then
+  # cpu count must be number
+  ! [[ $cpu_number =~ ^[0-9]+$ ]] && echo "CPU number is wrong give" && exit 2
+
+  # fetch cpu max
+  max_cpu=$(virsh dumpxml "$dom_name" | xmllint --xpath "string((///domain/vcpu))" -)
+
+  # compare give cpu size and max cpu size, if give is bigger, need do adjust after vm shutdown
+  if [[ $cpu_number -le $max_cpu ]]; then
+    virsh setvcpus "$dom_name" "$cpu_number" --live
+    #The configuration change takes effect on the next reboot of the guest.
+    #Must edit the VM configuration to preserve the settings across the VM power OFF/ ON
+    if [[ ! $LIVE_ONLY ]]; then
+      virsh setvcpus "$dom_name" "$cpu_number" --config
+    fi
+  else
+    highlight "$cpu_number is over max cpu size, need adjust max cpu size, will reboot guest"
+    REBOOT=$REBOOT"CPU"
+  fi
+fi
+
+
+## Shutdown VM
+if [[ $REBOOT ]]; then
+  set +e
+  echo "Domain guest: $dom_name is going to be shutdown"
+  ask_for_continue
+  virsh shutdown "$dom_name"
+  result=0
+  while [ $result -eq 0 ]
+  do
+    virsh list | grep "$dom_name"
+    result=$?
+    sleep 0.5
+  done
+  set -e
+fi
+
+if [[ $REBOOT =~ "MEMORY" ]]; then
+  echo "Set max memmory size to $memory_size"
+  virsh setmaxmem "$dom_name" "$memory_size" --config
+fi
+
+if [[ $REBOOT =~ "CPU" ]]; then
+  echo "Set max cpu size to $cpu_number"
+  virsh setvcpus "$dom_name" "$cpu_number" --config --maximum
+  virsh setvcpus "$dom_name" "$cpu_number" --current
+fi
+
+## Startup VM
+if [[ $REBOOT ]]; then
+  echo "Startup domain guest $dom_name"
+  virsh start "$dom_name"
+fi
+
+virsh dominfo "$dom_name"

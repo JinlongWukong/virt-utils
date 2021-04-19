@@ -19,3 +19,4 @@ Things that are here:
 - create-config-drive-bulk.sh -- wrapper of create-config-drive, for multi
 - virt-boot -- wrapper for virt-install to create a snapshot,
   populate a cloud-init compatible config drive, and boot an instance.
+- virt-adjust -- adjust guest memory/cpu size
