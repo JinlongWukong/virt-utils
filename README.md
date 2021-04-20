@@ -20,3 +20,4 @@ Things that are here:
 - virt-boot -- wrapper for virt-install to create a snapshot,
   populate a cloud-init compatible config drive, and boot an instance.
 - virt-adjust -- adjust guest memory/cpu size
+- virt-list -- virsh list with more columes

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+## This is a ehancement of virsh list with more columes. eg memroy cpu address
+
+# fetch memory sizse, unit k -> M
+find_memory() {
+  mem=$(virsh dominfo "$1"  | awk  '/^Used memory/{print $3}')
+  echo $((mem/1024))"M"
+}
+
+find_cpu() {
+  virsh dominfo "$1"  | awk  '/^CPU\(s/{print $2}'
+}
+
+find_addr() {
+  # Absolute path to this script, e.g. /home/user/bin/foo.sh
+  SCRIPT=$(readlink -f "$0")
+  # Absolute path this script is in, thus /home/user/bin
+  SCRIPTPATH=$(dirname "$SCRIPT")
+
+  "$SCRIPTPATH"/virt-addr "$1"
+}
+
+export -f find_memory
+export -f find_cpu
+export -f find_addr
+
+virsh list | awk \
+'BEGIN { printf "%5s %20s %10s %30s %5s %10s\n", "Id", "Name", "State", "Address", "CPU", "Memory"
+ print "-------------------------------------------------------------------------------------"} \
+ NR > 2 && NF { \
+ "find_addr "$1""|& getline $4; \
+ "find_cpu "$1""|& getline $5; \
+ "find_memory "$1""|& getline $6; \
+ printf "%5s %20s %10s %30s %5s %10s\n", $1, $2, $3, $4, $5, $6}'
