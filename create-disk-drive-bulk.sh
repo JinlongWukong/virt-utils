@@ -5,12 +5,12 @@ set -ue
 # This will generate boot disk images
 
 usage () {
-	echo "usage: ${0##*/}: [--copy <orign cloud image>] [--size <disk size>] [--prefix <prefix>] [--number <number>] "
+	echo "usage: ${0##*/}: [--copy <orign cloud image>] [--size <disk size>] [--prefix <prefix>] [--number <number>] [--index <start index>]"
 }
 
 ARGS=$(getopt \
-	-o c:s:p:n: \
-	--long help,copy:,size:,prefix:,number: -n ${0##*/} \
+	-o c:s:p:n:i: \
+	--long help,copy:,size:,prefix:,number:,index: -n ${0##*/} \
 	-- "$@")
 
 if [ $? -ne 0 ]; then
@@ -42,6 +42,10 @@ while :; do
 			number="$2"
 			shift 2
 			;;
+		-i|--index)
+			index_start="$2"
+			shift 2
+			;;
 		--)	shift
 			break
 			;;
@@ -51,11 +55,12 @@ done
 ! [[ "$prefix" ]] && echo -e "ERROR: -p, prefix must be given" && exit 1
 ! [[ "$copy_from" ]] && echo -e "ERROR: -c, copy must be given" && exit 1
 
-# set default value of number is 1
+# set default value
 : ${number:=1}
+: ${index_start:=1}
 
 # loop work
-for(( i=1;i<=$number;i++))
+for(( i=$index_start;i<$((number+index_start));i++))
 do
   if [ -f "$prefix-$i.img" ]; then
     echo -e "WARNING: $prefix-$i.img already existed, skip"

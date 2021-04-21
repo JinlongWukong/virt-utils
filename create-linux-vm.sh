@@ -5,12 +5,12 @@ set -ue
 # This will create few linux vm
 
 usage () {
-	echo "usage: ${0##*/}: [--cpu <cpu number>] [--memory <memory size>] [--bridge <bridge>] [--prefix <prefix>] [--number <vm number>] "
+	echo "usage: ${0##*/}: [--cpu <cpu number>] [--memory <memory size>] [--bridge <bridge>] [--prefix <prefix>] [--number <vm number>] [--index <start index>]"
 }
 
 ARGS=$(getopt \
-	-o c:m:b:p:n: \
-	--long help,cpu:,memory:,bridge:,prefix:,number: -n ${0##*/} \
+	-o c:m:b:p:n:i: \
+	--long help,cpu:,memory:,bridge:,prefix:,number:,index: -n ${0##*/} \
 	-- "$@")
 
 if [ $? -ne 0 ]; then
@@ -46,6 +46,10 @@ while :; do
 			number="$2"
 			shift 2
 			;;
+		-i|--index)
+			index_start="$2"
+			shift 2
+			;;
 		--)	shift
 			break
 			;;
@@ -58,9 +62,10 @@ done
 : ${memory_size:=2048}
 : ${bridge:=virbr0}
 : ${number:=1}
+: ${index_start:=1}
 
 # loop work
-for(( i=1;i<=$number;i++))
+for(( i=$index_start;i<$((number+index_start));i++))
 do
   if [ ! -f "$prefix-$i.img" -o ! -f "$prefix-$i.iso" ]; then
     echo -e "ERROR: $prefix-$i.img or $prefix-$i.iso not found"
