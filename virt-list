@@ -2,6 +2,11 @@
 
 ## This is a ehancement of virsh list with more columes. eg memroy cpu address
 
+# Absolute path to this script, e.g. /home/user/bin/foo.sh
+SCRIPT=$(readlink -f "$0")
+# Absolute path this script is in, thus /home/user/bin
+SCRIPTPATH=$(dirname "$SCRIPT")
+
 # fetch memory sizse, unit k -> M
 find_memory() {
   mem=$(virsh dominfo "$1"  | awk  '/^Used memory/{print $3}')
@@ -13,14 +18,10 @@ find_cpu() {
 }
 
 find_addr() {
-  # Absolute path to this script, e.g. /home/user/bin/foo.sh
-  SCRIPT=$(readlink -f "$0")
-  # Absolute path this script is in, thus /home/user/bin
-  SCRIPTPATH=$(dirname "$SCRIPT")
-
   "$SCRIPTPATH"/virt-addr "$1"
 }
 
+export SCRIPTPATH
 export -f find_memory
 export -f find_cpu
 export -f find_addr
