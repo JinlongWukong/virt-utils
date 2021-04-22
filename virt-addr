@@ -55,6 +55,6 @@ fi
 
 #awk -vmacaddress=$macaddr '$2 == macaddress {print $3}' $LIBVIRT_LEASE_FILE
 # $LIBVIRT_LEASE_FILE may not existed, so use virsh net-dhcp-leases instead
-virsh net-dhcp-leases ${LIBVIRT_NETWORK} | awk -v macaddress=$macaddr '$3 == macaddress {print $4}'
+virsh net-dhcp-leases ${LIBVIRT_NETWORK} | awk -v macaddress=$macaddr '$3 == macaddress {print $5}'
 
 
