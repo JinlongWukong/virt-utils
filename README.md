@@ -1,4 +1,4 @@
-##Things that are here:
+## Things that are here:
 
 - virt-addr -- list the ip addresses assigned to a domain by scanning
   the lease file for the `default` libvirt network.
@@ -22,11 +22,13 @@
 - virt-adjust -- adjust guest memory/cpu size
 - virt-list -- virsh list with more columes
 
-##Installation
+## Installation
 
 #### install libvirt
 - yum install qemu-kvm libvirt libvirt-python virt-install bridge-utils
 - systemctl enable libvirtd && systemctl start libvirtd
 #### download scripts into /var/lib/libvirt/images/
 #### install scripts
+```
 ls | grep virt- | awk '{print "ln -s /var/lib/libvirt/images/"$1" /bin/"$1}' | sh -
+```
