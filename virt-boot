@@ -1,11 +1,11 @@
 #!/bin/sh
 
-boot_vol_bus=virtio
+# This script is used boot vm
 
-ARGS=$(getopt -o s:b:c:u:v:ik: --long ssh-key:,size:,import,bus:,base-image:,config:,user-data:,vendor-data: -n virt-boot -- "$@")
+ARGS=$(getopt -o s:b:c:m:n:u:v:ik: --long ssh-key:,size:,import,bus:,base-image:,cpu:,memory,:network,:user-data:,vendor-data: -n virt-boot -- "$@")
 
 if [ $? -ne 0 ]; then
-	echo "usage: $myname --base-image <baseimage> <name>"
+	echo "usage: $myname --base-image <baseimage> [--cpu <cpu number>] [--memory <memory size>] <name>"
 	exit 2
 fi
 
@@ -27,8 +27,16 @@ while :; do
 			base_image_size="$2"
 			shift 2
 			;;
-		-c|--config-drive)
-			config_image="$2"
+		-c|--cpu)
+			cpu="$2"
+			shift 2
+			;;
+		-m|--memory)
+			memory="$2"
+			shift 2
+			;;
+		-n|--network)
+			bridge="$2"
 			shift 2
 			;;
 		-k|--ssh-key)
@@ -61,10 +69,7 @@ if [ -z "$dom_name" ]; then
 	exit 1
 fi
 
-if [ "$ssh_key" ] && [ -f "$ssh_key" ]; then
-	ssh_key_data=$(cat "$ssh_key")
-fi
-
+# remove old dom instance
 (
 virsh destroy $dom_name
 virsh undefine $dom_name
@@ -82,19 +87,28 @@ else
 	fi
 fi
 
-if ! [ "$config_image" ]; then
-	config_image=/tmp/${dom_name}-config.iso
-	create-config-drive \
-		-h $dom_name \
-		${ssh_key:+-k $ssh_key} \
-		${user_data:+-u $user_data} \
-		${vendor_data:+-v $vendor_data} \
-		$config_image
-fi
 
-virt-install -n $dom_name \
-	--disk vol=$boot_vol,bus=$boot_vol_bus --import \
-	--noautoconsole \
-	${config_image:+--disk path=$config_image,device=cdrom} \
-	"$@"
+config_image=/tmp/${dom_name}-config.iso
+create-config-drive \
+	-h $dom_name \
+	${ssh_key:+-k $ssh_key} \
+	${user_data:+-u $user_data} \
+	${vendor_data:+-v $vendor_data} \
+	$config_image
+
+# set default value
+: ${cpu:=2}
+: ${memory:=2048}
+: ${bridge:=virbr0}
+: ${boot_vol_bus:=virtio}
+
+virt-install --import \
+  --cpu host \
+  --name $dom_name \
+  --memory "$memory" \
+  --vcpus "$cpu" \
+  --network bridge="$bridge",model=virtio \
+	--disk vol=$boot_vol,bus=$boot_vol_bus \
+	--disk path=$config_image,device=cdrom \
+	--noautoconsole
 
