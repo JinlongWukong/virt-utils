@@ -2,21 +2,18 @@
 
 ### this script is used to shutdown/undefine domain with remove all attached disks
 
-# Absolute path to this script, e.g. /home/user/bin/foo.sh
-SCRIPT=$(readlink -f "$0")
-# Absolute path this script is in, thus /home/user/bin
-SCRIPTPATH=$(dirname "$SCRIPT")
-
-## use domain name instead of domain id
-domain_name=$(virsh list | awk -v id=$1 '$1 == id {print $2}')
-arg1=${1:+"$domain_name"}
-# reset args
-set -- $arg1
+# if input arg is domain id, need transfer into domain name
+if [ ! $(virsh list --all --name | grep  "^$1$") ];then
+  domain_name=$(virsh list | awk -v id=$1 '$1 == id {print $2}')
+  arg1=${1:+"$domain_name"}
+  # reset args
+  set -- $arg1
+fi
 
 echo "Destroy: $1"
 virsh destroy $1 2> /dev/null
 
-for disk_path in $("$SCRIPTPATH"/virt-query $1 disks | awk '{print $3}'); do
+for disk_path in $(virt-query $1 disks | awk '{print $3}'); do
 	pool=$(virsh vol-pool $disk_path)
 	name=$(virsh vol-info $disk_path | awk '$1 == "Name:" {print $2}')
 	
@@ -26,4 +23,3 @@ done
 
 echo "Undefine: $1"
 virsh undefine $1
-
