@@ -10,6 +10,10 @@ function highlight() {
 	echo -e "${COLOR}${MESSAGE}${RESET}"
 }
 
+function err() {
+    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $@" >&2
+}
+
 function ask_for_continue() {
 
 	while read -p "Do you want continue? yes or no: " yn; do
