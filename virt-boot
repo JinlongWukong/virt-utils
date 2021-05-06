@@ -2,7 +2,7 @@
 
 # This script is used boot vm
 
-ARGS=$(getopt -o s:b:c:m:n:u:v:ik: --long ssh-key:,size:,import,bus:,base-image:,cpu:,memory,:network,:user-data:,vendor-data: -n virt-boot -- "$@")
+ARGS=$(getopt -o s:b:c:m:n:u:v:ik: --long ssh-key:,size:,import,bus:,base-image:,cpu:,memory,:network,:user-data:,vendor-data:,vnc-pass: -n virt-boot -- "$@")
 
 if [ $? -ne 0 ]; then
 	echo "usage: $myname --base-image <baseimage> [--cpu <cpu number>] [--memory <memory size>] <name>"
@@ -49,6 +49,10 @@ while :; do
 			;;
 		-v|--vendor-data)
 			vendor_data="$2"
+			shift 2
+			;;
+		--vnc-pass)
+			vnc_pass="$2"
 			shift 2
 			;;
 		-i|--import)
@@ -101,6 +105,7 @@ create-config-drive \
 : ${memory:=2048}
 : ${bridge:=virbr0}
 : ${boot_vol_bus:=virtio}
+: ${vnc_pass:=12345678}
 
 virt-install --import \
   --cpu host \
@@ -110,5 +115,6 @@ virt-install --import \
   --network bridge="$bridge",model=virtio \
 	--disk vol=$boot_vol,bus=$boot_vol_bus \
 	--disk path=$config_image,device=cdrom \
+	--graphics vnc,password="$vnc_pass",listen=0.0.0.0 \
 	--noautoconsole
 
