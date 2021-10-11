@@ -98,7 +98,7 @@ else
 fi
 
 
-config_image=/tmp/${dom_name}-config.iso
+config_image=/var/tmp/${dom_name}-config.iso
 create-config-drive \
 	-h $hostname \
 	${ssh_key:+-k $ssh_key} \
